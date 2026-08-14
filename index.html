@@ -1,56 +1,29 @@
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Luxury Rickshaw- Playlist</title>
+<title>लग्जरी रिक्शा — Music Player</title>
 <meta name="description" content="A cinematic, illustrated Indian-street-inspired YouTube playlist player." />
 
-<!-- Fonts: Yatra One (Devanagari display), Noto Serif Devanagari (fallback for hero),
-     Manrope (UI sans). All have full system-font fallbacks defined in style.css,
-     so the page still looks correct if fonts.googleapis.com is unreachable. -->
-<link rel="manifest" href="site.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Noto+Serif+Devanagari:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
   rel="stylesheet"
 />
-<link rel="apple-touch-icon" sizes="57x57" href="assets/favicon/favicon.ico">
-<link rel="apple-touch-icon" sizes="60x60" href="assets/favicon//apple-icon-60x60.png">
-<link rel="apple-touch-icon" sizes="72x72" href="assets/favicon//apple-icon-72x72.png">
-<link rel="apple-touch-icon" sizes="76x76" href="assets/favicon//apple-icon-76x76.png">
-<link rel="apple-touch-icon" sizes="114x114" href="assets/favicon//apple-icon-114x114.png">
-<link rel="apple-touch-icon" sizes="120x120" href="assets/favicon//apple-icon-120x120.png">
-<link rel="apple-touch-icon" sizes="144x144" href="assets/favicon//apple-icon-144x144.png">
-<link rel="apple-touch-icon" sizes="152x152" href="assets/favicon//apple-icon-152x152.png">
-<link rel="apple-touch-icon" sizes="180x180" href="assets/favicon//apple-icon-180x180.png">
-<link rel="icon" type="image/png" sizes="192x192"  href="/android-icon-192x192.png">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon//favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="96x96" href="assets/favicon//favicon-96x96.png">
-<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon/">
-<link rel="manifest" href="/manifest.json">
-<meta name="msapplication-TileColor" content="#ffffff">
-<meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-<meta name="theme-color" content="#ffffff">
-
-
-
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="assets/favicon.png" type="image/png" /> <!-- fallback for older browsers -->
+<link rel="manifest" href="site.webmanifest" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <!-- ============================================================
        BACKGROUND LAYER
-       Order (back to front): illustrated scene -> dynamic thumbnail
-       wash -> color overlay -> grain texture
   ============================================================= -->
   <div class="bg-layer" aria-hidden="true">
     <div class="bg-illustration" id="bgIllustration">
-      <!-- Built-in illustrated dusk skyline, used when no CONFIG.backgroundImage
-           is supplied. See generateIllustration() in script.js for the sky/sun,
-           and the static markup below for the string lights + birds. -->
       <svg class="skyline-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -82,21 +55,16 @@
         <circle cx="800" cy="430" r="320" fill="url(#sunGlow)" />
         <circle cx="800" cy="430" r="120" fill="#ffedd0" opacity="0.9" />
 
-        <!-- birds -->
         <g class="birds" stroke="#2b0f0d" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.55">
           <path d="M300 220 q14 -16 28 0 q14 -16 28 0" />
           <path d="M370 260 q10 -12 20 0 q10 -12 20 0" />
           <path d="M1180 200 q12 -14 24 0 q12 -14 24 0" />
         </g>
 
-        <!-- far skyline -->
         <g id="rowFarBuildings" fill="url(#rowFar)"></g>
-        <!-- mid skyline -->
         <g id="rowMidBuildings" fill="url(#rowMid)"></g>
-        <!-- near skyline / foreground silhouette -->
         <g id="rowNearBuildings" fill="url(#rowNear)"></g>
 
-        <!-- hanging string lights -->
         <g class="string-lights" fill="none" stroke="#3a1512" stroke-width="3" opacity="0.8">
           <path d="M0 90 Q 400 210 800 100 T 1600 95" />
         </g>
@@ -105,46 +73,72 @@
     </div>
 
     <div class="bg-photo" id="bgPhoto"></div>
-    <div class="bg-photo bg-photo--dynamic" id="bgPhotoDynamic"></div>
     <div class="bg-photo bg-photo--mobile" id="bgPhotoMobile"></div>
+    <div class="bg-photo bg-photo--dynamic" id="bgPhotoDynamic"></div>
     <div class="bg-overlay"></div>
     <div class="bg-grain"></div>
+
+    <!-- Rain effect — populated with falling drop elements by script.js,
+         shown only when live weather conditions indicate rain/drizzle/storm. -->
+    <div class="rain-layer" id="rainLayer" aria-hidden="true"></div>
   </div>
 
   <!-- ============================================================
-       TOP-LEFT: LOCAL CLOCK
+       TOP-LEFT: WEATHER + CLOCK
   ============================================================= -->
-  <div class="clock" id="clock" aria-hidden="true"></div>
+  <div class="top-left-pill" id="weatherPill">
+    <span class="clock" id="clock"></span>
+    <span class="weather-chip" id="weatherChip" aria-hidden="true">
+      <span class="weather-icon" id="weatherIcon">⛅</span>
+    </span>
+    <button class="location-chip" id="locationChip" aria-haspopup="true" aria-expanded="false" aria-controls="locationSearchPanel" title="Change weather location">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+      <span id="locationName">Manali</span>
+    </button>
+  </div>
 
   <!-- ============================================================
-       TOP-RIGHT: SERVICE NAVIGATION
+       LOCATION SEARCH — pick weather for any place
   ============================================================= -->
-  <nav class="service-nav" aria-label="Listening options">
-    <a href="/v2/index.html" class="service-link" aria-label="Open Rickshaw v2">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" fill="none"/>
-      </svg>
-      <span> V2</span>
-    </a>
+  <div class="location-search-backdrop" id="locationSearchBackdrop"></div>
+  <div class="location-search-panel" id="locationSearchPanel" aria-hidden="true">
+    <div class="location-search-header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="locationSearchInput" class="location-search-input" placeholder="Search for a city…" autocomplete="off" spellcheck="false" />
+      <button class="location-search-close" id="locationSearchClose" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
+      </button>
+    </div>
+    <ul class="location-search-results" id="locationSearchResults"></ul>
+  </div>
+
+  <!-- ============================================================
+       TOP-RIGHT: LIKE + ONLINE + SOCIAL LINKS
+  ============================================================= -->
+  <nav class="service-nav" aria-label="Playlist and social links">
+    <button class="like-pill" id="likeBtn" aria-label="Like this playlist" aria-pressed="false" title="Like this playlist">
+      <svg id="heartIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-10-9.3C.5 7.8 2.3 4.5 5.7 4c2-.3 3.9.6 5 2.2 1.1-1.6 3-2.5 5-2.2 3.4.5 5.2 3.8 3.7 7.2-2.5 4.7-10 9.3-10 9.3Z"/></svg>
+      <span id="likeCount">0</span>
+    </button>
 
     <span class="online-pill" id="onlinePill">
       <span class="online-dot" aria-hidden="true"></span>
       <span><span id="onlineCount">30</span> online</span>
     </span>
-    <a class="service-link" id="spotifyLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open on Spotify (new tab)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.14 14.36a.62.62 0 0 1-.86.2c-2.36-1.44-5.34-1.77-8.84-.97a.62.62 0 1 1-.27-1.21c3.83-.87 7.12-.5 9.76 1.11.3.19.4.58.21.87Zm1.15-2.6a.78.78 0 0 1-1.07.25c-2.7-1.66-6.82-2.14-10.02-1.17a.78.78 0 0 1-.45-1.49c3.65-1.1 8.19-.57 11.29 1.33.37.22.49.71.25 1.08Zm.1-2.7C14.6 9.2 9.4 9.02 6.36 9.96a.93.93 0 1 1-.55-1.78c3.5-1.06 9.25-.86 12.9 1.32a.93.93 0 0 1-.97 1.58Z" fill="currentColor"/></svg>
-      <span>Spotify</span>
-      <span class="ext-arrow" aria-hidden="true">↗</span>
+
+    <a class="icon-link" id="ytMusicLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open on YT Music (new tab)" title="YT Music">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><circle cx="12" cy="12" r="6.2" fill="#1c0b09"/><path d="M10.3 9.3v5.4l4.6-2.7-4.6-2.7Z" fill="currentColor"/></svg>
     </a>
-    <a class="service-link" id="ytMusicLink" href="#" target="_blank" rel="noopener noreferrer" aria-label="Open on YT Music (new tab)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><circle cx="12" cy="12" r="6.2" fill="#1c0b09"/><path d="M10.3 9.3v5.4l4.6-2.7-4.6-2.7Z" fill="currentColor"/></svg>
-      <span>YT Music</span>
-      <span class="ext-arrow" aria-hidden="true">↗</span>
+    <a class="icon-link" id="instagramLink" href="https://www.instagram.com/arion.core" target="_blank" rel="noopener noreferrer" aria-label="Open Instagram (new tab)" title="Instagram">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.6"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></svg>
+    </a>
+    <a class="icon-link" id="githubLink" href="https://github.com/ianshulx/LuxuryRickshaw" target="_blank" rel="noopener noreferrer" aria-label="Open GitHub repo (new tab)" title="GitHub">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.5c.5.1.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.95 0-1.1.39-1.99 1.03-2.7-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.4 9.4 0 0 1 5 0c1.9-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.71 1.03 1.6 1.03 2.7 0 3.85-2.34 4.7-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .26.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>
     </a>
   </nav>
 
   <!-- ============================================================
-       CENTRAL HERO TITLE (part of the artwork, not a heading)
+       CENTRAL HERO TITLE
   ============================================================= -->
   <div class="hero-title" id="heroTitle" aria-hidden="true"></div>
 
@@ -152,6 +146,7 @@
        STATUS / LOADING / ERROR BANNER
   ============================================================= -->
   <div class="status-banner" id="statusBanner" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <!-- ============================================================
        YOUTUBE PLAYER — functional, visually hidden
@@ -161,20 +156,31 @@
   </div>
 
   <!-- ============================================================
-       FLOATING MUSIC PLAYER
+       FLOATING PLAYER ISLAND
   ============================================================= -->
   <section class="player" id="player" aria-label="Music player">
-    <div class="player-art-ring" id="artRing">
-      <img class="player-art" id="albumArt" src="" alt="" />
-    </div>
-
-    <div class="player-body">
-      <div class="track-meta">
-        <p class="track-title" id="trackTitle">Loading playlist…</p>
-        <p class="track-artist" id="trackArtist">Please wait</p>
+    <div class="player-top-row">
+      <div class="player-art-wrap" id="artSwipeArea">
+        <div class="player-art-ring">
+          <img class="player-art" id="albumArt" src="" alt="" draggable="false" />
+        </div>
+        <button class="swipe-hint swipe-hint--left" id="swipeHintLeft" aria-hidden="true" tabindex="-1">‹</button>
+        <button class="swipe-hint swipe-hint--right" id="swipeHintRight" aria-hidden="true" tabindex="-1">›</button>
       </div>
 
-      <div class="progress-row">
+      <div class="track-meta">
+        <p class="track-title" id="trackTitle">Loading playlist…</p>
+        <p class="track-subtitle" id="trackSubtitle"></p>
+        <p class="track-artist" id="trackArtist"></p>
+      </div>
+    </div>
+
+    <div class="scrubber-col">
+      <div class="waveform-row">
+        <div class="waveform-bars" id="waveformBars"></div>
+      </div>
+
+      <div class="seek-row">
         <span class="time-label" id="currentTime">0:00</span>
         <div
           class="progress-track"
@@ -186,22 +192,16 @@
           aria-valuemax="100"
           aria-valuenow="0"
         >
-          <div class="progress-fill" id="progressFill"></div>
+          <div class="progress-fill-mask" id="progressFillMask"></div>
           <div class="progress-handle" id="progressHandle"></div>
-          <div class="scrub-tooltip" id="scrubTooltip">0:00</div>
         </div>
         <span class="time-label" id="durationTime">0:00</span>
       </div>
     </div>
 
     <div class="player-controls">
-  <button class="ctrl-btn repeat-btn" id="repeatBtn" aria-label="Repeat off" title="Repeat" aria-pressed="false">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7Zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4Z"/></svg>
-</button>
-
-      <button class="ctrl-btn seek-btn" id="seekBackBtn" aria-label="Seek back 5 seconds" title="Back 5s">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg>
-  <span class="seek-label">5</span>
+      <button class="ctrl-btn repeat-btn" id="repeatBtn" aria-label="Repeat off" title="Repeat" aria-pressed="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7Zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4Z"/></svg>
       </button>
 
       <button class="ctrl-btn" id="prevBtn" aria-label="Previous track" title="Previous">
@@ -217,22 +217,6 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 6h2v12h-2V6Zm-2 6-10 6V6l10 6Z"/></svg>
       </button>
 
-      <button class="ctrl-btn seek-btn" id="seekForwardBtn" aria-label="Seek forward 5 seconds" title="Forward 5s">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="transform: scaleX(-1)"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7Z"/></svg>
-  <span class="seek-label">5</span>
-</button>
-
-
-
-
-<div class="volume-wrap">
-        <button class="ctrl-btn volume-btn" id="volumeBtn" aria-label="Mute" title="Mute">
-          <svg id="iconVolume" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 9v6h4l5 5V4L8 9H4Zm11.5 3a3.5 3.5 0 0 0-2-3.16v6.32A3.5 3.5 0 0 0 15.5 12Z"/></svg>
-          <svg id="iconMuted" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="display:none"><path d="M4 9v6h4l5 5V4L8 9H4Zm12.7-1.3-1.4 1.4 2 1.9-2 1.9 1.4 1.4 1.9-2 1.9 2 1.4-1.4-2-1.9 2-1.9-1.4-1.4-1.9 2-1.9-2Z"/></svg>
-        </button>
-        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="80" aria-label="Volume" />
-      </div>
-
       <button class="ctrl-btn queue-btn" id="queueBtn" aria-label="Show queue" title="Queue" aria-expanded="false" aria-controls="queuePanel">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 6h11v2H4V6Zm0 5h11v2H4v-2Zm0 5h7v2H4v-2Zm13.5-8L22 12l-4.5 4V8Z"/></svg>
       </button>
@@ -240,7 +224,7 @@
   </section>
 
   <!-- ============================================================
-       QUEUE DRAWER — swipeable "up next" panel
+       QUEUE DRAWER
   ============================================================= -->
   <div class="queue-backdrop" id="queueBackdrop"></div>
   <section class="queue-panel" id="queuePanel" aria-label="Song queue" aria-hidden="true">
@@ -251,10 +235,19 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
       </button>
     </div>
+    <div class="queue-search-row">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="queueSearchInput" class="queue-search-input" placeholder="Search by song, artist, or movie…" autocomplete="off" spellcheck="false" />
+      <button class="queue-search-clear" id="queueSearchClear" aria-label="Clear search" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m6.4 5 12.6 12.6-1.4 1.4L5 6.4 6.4 5Zm12.6 1.4L6.4 19 5 17.6 17.6 5 19 6.4Z"/></svg>
+      </button>
+    </div>
+    <p class="queue-search-empty" id="queueSearchEmpty" style="display:none">No songs match your search.</p>
     <ul class="queue-list" id="queueList" role="list"></ul>
   </section>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="script.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
