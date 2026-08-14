@@ -700,19 +700,32 @@ function generateWaveform() {
 }
 
 let waveformPulseId = null;
+let waveformLastPaint = null;
 
+// PERF: this used to write `style.height` on all 56 bars every single
+// animation frame (~3,360 DOM writes/sec) for the entire duration of
+// playback. `height` is a layout property, so each write forced a reflow —
+// continuous layout thrashing purely for a decorative wobble. Fixed by:
+//   1) throttling the paint to ~12fps (still looks smooth for a slow wobble)
+//   2) animating `transform: scaleY()` instead of `height` — transforms are
+//      handled on the compositor and never trigger layout/paint.
 function startWaveformPulse() {
   if (waveformPulseId) return;
   const bars = el.waveformBars.querySelectorAll("span");
+  const baseHeights = Array.from(bars, (bar) => parseFloat(bar.dataset.baseHeight) || 0.5);
   let t = 0;
-  const tick = () => {
-    t += 1;
-    bars.forEach((bar, i) => {
-      const base = parseFloat(bar.dataset.baseHeight) || 0.5;
-      const wobble = Math.sin(t * 0.15 + i * 0.6) * 0.18;
-      const h = Math.max(0.12, Math.min(1, base + wobble));
-      bar.style.height = Math.round(h * 100) + "%";
-    });
+
+  const tick = (timestamp) => {
+    if (!waveformLastPaint || timestamp - waveformLastPaint > 80) {
+      t += 1;
+      for (let i = 0; i < bars.length; i++) {
+        const base = baseHeights[i];
+        const wobble = Math.sin(t * 0.15 + i * 0.6) * 0.18;
+        const h = Math.max(0.12, Math.min(1, base + wobble));
+        bars[i].style.transform = `scaleY(${(h / base).toFixed(3)})`;
+      }
+      waveformLastPaint = timestamp;
+    }
     waveformPulseId = requestAnimationFrame(tick);
   };
   waveformPulseId = requestAnimationFrame(tick);
@@ -722,14 +735,31 @@ function stopWaveformPulse() {
   if (waveformPulseId) {
     cancelAnimationFrame(waveformPulseId);
     waveformPulseId = null;
+    waveformLastPaint = null;
   }
+  const bars = el.waveformBars.querySelectorAll("span");
+  bars.forEach((bar) => {
+    bar.style.transform = "";
+  });
 }
 
 /* ==========================================================================
    9. THUMBNAIL LOADING WITH FALLBACK CHAIN
    ========================================================================== */
 
+// PERF: every song change fires up to three independent calls to this
+// function for the same videoId — setAlbumArtwork, updateMediaSessionMetadata,
+// and (already-loaded) queue rows. Each call used to re-run the full
+// probe-every-size-over-the-network chain from scratch. A small in-memory
+// cache means the network/probe chain only runs once per video per session.
+const thumbnailCache = {};
+
 function loadBestThumbnail(videoId, onSuccess, onFailure) {
+  if (thumbnailCache[videoId]) {
+    onSuccess(thumbnailCache[videoId]);
+    return;
+  }
+
   const sizes = ["maxresdefault", "hqdefault", "mqdefault", "default"];
   let i = 0;
 
@@ -746,6 +776,7 @@ function loadBestThumbnail(videoId, onSuccess, onFailure) {
         tryNext();
         return;
       }
+      thumbnailCache[videoId] = url;
       onSuccess(url);
     };
     probe.onerror = () => {

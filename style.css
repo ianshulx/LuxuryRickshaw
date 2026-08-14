@@ -883,6 +883,9 @@ img {
 .player.is-playing .waveform-bars span {
   opacity: 0.85;
   background: linear-gradient(180deg, var(--color-ember), var(--color-gold));
+  /* Only promote to a compositor layer while actually animating (playing) —
+     scoping will-change to this state avoids reserving GPU memory at idle. */
+  will-change: transform;
 }
 
 /* ---- seek row: thin scrubber with time labels ---- */
